@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: edulink-server
+    env: node
+    plan: free
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # User must provide this
+      - key: JWT_SECRET
+        sync: false # User must provide this

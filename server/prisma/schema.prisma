@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      String   @default("STUDENT") // "STUDENT" | "ADMIN"
+  className String?  // Optional: classe de l'élève
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Document {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  url         String
+  subject     String
+  className   String
+  year        Int
+  type        String // "COURSE" | "EXERCISE" | "HOMEWORK" | "CORRECTION"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
