@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: 'http://localhost:3000', // URL backend par défaut
+    baseURL: import.meta.env.VITE_API_BASE_URL || 'https://edulink-server.onrender.com', // Production URL
 });
 
 api.interceptors.request.use((config) => {

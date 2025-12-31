@@ -10,7 +10,10 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+    origin: process.env.CLIENT_URL || '*', // Allow all for now or specific client URL
+    credentials: true
+}));
 app.use(express.json());
 
 // Routes
