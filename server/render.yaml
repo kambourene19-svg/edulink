@@ -3,12 +3,14 @@ services:
     name: edulink-server
     env: node
     plan: free
-    buildCommand: npm install && npx prisma generate && npm run build
+    buildCommand: npm install && npx prisma generate && npx prisma db push --accept-data-loss && npx ts-node prisma/seed.ts && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        sync: false # User must provide this
+        sync: false # Pgbouncer URL (port 6543) + ?pgbouncer=true
+      - key: DIRECT_URL
+        sync: false # Direct URL (port 5432)
       - key: JWT_SECRET
-        sync: false # User must provide this
+        sync: false
