@@ -25,8 +25,18 @@ export const register = async (req: Request, res: Response) => {
         });
 
         res.status(201).json({ message: 'User created successfully', userId: user.id });
-    } catch (error) {
-        res.status(400).json({ error: 'Registration failed', details: error });
+    } catch (error: any) {
+        console.error('Registration error:', error);
+
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Validation failed', details: error.errors });
+        }
+
+        if (error.code === 'P2002') {
+            return res.status(400).json({ error: 'Email already exists' });
+        }
+
+        res.status(400).json({ error: 'Registration failed', details: error.message || error });
     }
 };
 
