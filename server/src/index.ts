@@ -32,11 +32,12 @@ if (process.env.CLIENT_URL) {
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        // or requests from allowed origins
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        // Important : avec credentials: true, origin ne peut pas être "*"
+        // Si allowedOrigins contient "*" ou l'origine réelle, on renvoie true (echo de l'origine)
+        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
             callback(null, true);
         } else {
+            console.warn(`CORS blocked for origin: ${origin}`);
             callback(new Error('Not allowed by CORS'));
         }
     },
