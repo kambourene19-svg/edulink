@@ -156,18 +156,17 @@ export const bookSeat = async (req: Request, res: Response) => {
  * Webhook de paiement (Simulation)
  */
 export const paymentWebhook = async (req: Request, res: Response) => {
+    console.log('[WEBHOOK] Request Body:', JSON.stringify(req.body, null, 2));
     const { bookingId, status, secret } = req.body;
 
-    // SECURITY: Verify webhook secret
-    // Utilisation d'une valeur par défaut sécurisée si la variable d'environnement est absente sur Render
     const expectedSecret = process.env.WEBHOOK_SECRET || 'fasoticket_secure_webhook_2026_xYz';
 
     if (secret !== expectedSecret) {
-        console.warn(`[SECURITY ALERT] Unauthorized webhook attempt for booking ${bookingId}`);
+        console.warn(`[SECURITY ALERT] Secret mismatch. Got: ${secret}, Expected: ${expectedSecret}`);
         return res.status(401).json({ error: 'Unauthorized: Invalid webhook secret' });
     }
 
-    console.log(`[PAYMENT WEBHOOK] Received for Booking: ${bookingId}, Status: ${status}`);
+    console.log(`[PAYMENT WEBHOOK] Processing Booking: ${bookingId}, Status: ${status}`);
 
     try {
         if (status === 'SUCCESS') {

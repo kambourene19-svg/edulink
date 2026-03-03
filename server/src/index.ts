@@ -49,15 +49,13 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
 const allowedOrigins = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
-    'http://192.168.11.117:5173',
+    'http://192.168.11.120:5173',
     'http://localhost:4173',
     'http://127.0.0.1:4173',
-    'http://192.168.11.117:4173',
+    'http://192.168.11.120:4173',
+    'https://fasoticket-dashboard-dev-seth.loca.lt',
+    '*', // Permettre tout pour le développement local et les tunnels Expo
 ];
-
-if (process.env.CLIENT_URL) {
-    allowedOrigins.push(process.env.CLIENT_URL);
-}
 
 app.use(cors({
     origin: function (origin, callback) {

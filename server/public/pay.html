@@ -295,8 +295,11 @@
                 btn.innerText = 'Validation Réseau...';
                 log('Appel Webhook...');
 
+                const webhookUrl = window.location.origin + '/api/bookings/payment-webhook';
+                log('URL: ' + webhookUrl);
+
                 try {
-                    var r = await fetch('/api/bookings/payment-webhook', {
+                    var r = await fetch(webhookUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -310,14 +313,17 @@
                         document.getElementById('step-2').style.display = 'none';
                         document.getElementById('step-3').style.display = 'block';
                     } else {
-                        log('FAIL: ' + r.status);
-                        alert('Erreur: ' + r.status);
+                        var errorText = await r.text();
+                        log('FAIL: ' + r.status + ' - ' + errorText);
+                        alert('Erreur: ' + r.status + ' (' + errorText + ')');
                         btn.disabled = false;
                         btn.innerText = 'Réessayer';
                     }
                 } catch (e) {
                     log('CRASH NET: ' + e.message);
+                    alert('Erreur Réseau: Impossible de contacter le serveur. ' + e.message);
                     btn.disabled = false;
+                    btn.innerText = 'Réessayer';
                 }
             }
 

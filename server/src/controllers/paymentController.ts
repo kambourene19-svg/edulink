@@ -13,7 +13,9 @@ const BASE_URL = process.env.BASE_URL;
 export const initiatePayment = async (req: Request, res: Response) => {
     try {
         const { bookingId } = req.body;
-        const userId = req.user.userId;
+        const userId = req.user?.userId;
+
+        console.log(`[INITIATE PAYMENT] BookingID: ${bookingId}, UserID: ${userId}`);
 
         const booking = await prisma.booking.findUnique({
             where: { id: bookingId },
@@ -21,16 +23,15 @@ export const initiatePayment = async (req: Request, res: Response) => {
         });
 
         if (!booking) {
+            console.error(`[PAYMENT ERROR] Booking ${bookingId} not found`);
             return res.status(404).json({ error: 'Réservation non trouvée' });
         }
 
         const transactionId = `FT-${Date.now()}`;
         const amount = booking.schedule.route.price;
 
-        // Nettoyage du numéro de téléphone pour CinetPay (pas d'espaces, pas de +)
         const cleanPhone = booking.user.phone.replace(/\D/g, '');
 
-        // Préparer les données pour CinetPay
         const paymentData = {
             apikey: CINETPAY_API_KEY,
             site_id: CINETPAY_SITE_ID,
@@ -39,7 +40,7 @@ export const initiatePayment = async (req: Request, res: Response) => {
             currency: "XOF",
             alternative_currency: "",
             description: `Achat ticket FasoTicket - Siège ${booking.seatNumber}`,
-            customer_id: userId,
+            customer_id: userId || "GUEST",
             customer_name: booking.user.fullName || "Client",
             customer_surname: "FasoTicket",
             customer_email: "client@fasoticket.com",
@@ -56,12 +57,12 @@ export const initiatePayment = async (req: Request, res: Response) => {
             lang: "fr"
         };
 
-        console.log('[CINETPAY PAYLOAD]', JSON.stringify(paymentData, null, 2));
         try {
-            const response = await axios.post('https://api-checkout.cinetpay.com/v2/payment', paymentData);
-            console.log('[CINETPAY RESPONSE]', response.data);
+            console.log('[CINETPAY] Attempting real API call...');
+            const response = await axios.post('https://api-checkout.cinetpay.com/v2/payment', paymentData, { timeout: 5000 });
 
-            if (response.data.code === '201') {
+            if (response.data.code === '201' || response.data.code === '00') {
+                console.log('[CINETPAY SUCCESS]', response.data.data.payment_url);
                 await prisma.payment.update({
                     where: { bookingId: booking.id },
                     data: { transactionId: transactionId }
@@ -73,30 +74,32 @@ export const initiatePayment = async (req: Request, res: Response) => {
                     mode: 'REAL'
                 });
             } else {
-                console.warn('[CINETPAY API WARNING] Falling back to simulator:', response.data.message);
+                console.warn('[CINETPAY API WARNING] Code:', response.data.code, 'Message:', response.data.message);
             }
         } catch (apiError: any) {
-            console.error('[CINETPAY API ERROR] Falling back to simulator:', apiError.response?.data || apiError.message);
+            console.error('[CINETPAY API ERROR]:', apiError.response?.data || apiError.message);
         }
 
-        // --- FALLBACK : SIMULATEUR INTERNE ---
-        // Si CinetPay échoue ou si on est en mode test, on utilise notre propre page pay.html
-        const simulationUrl = `${process.env.PEER_URL || BASE_URL}/pay.html?bookingId=${booking.id}&amount=${amount}&phone=${cleanPhone}&v=${Date.now()}`;
+        const currentHost = req.get('host');
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+        const computedBaseUrl = process.env.PEER_URL || `${protocol}://${currentHost}`;
 
-        console.log('[PAYMENT FALLBACK] Using internal simulator:', simulationUrl);
+        const simulationUrl = `${computedBaseUrl}/pay.html?bookingId=${booking.id}&amount=${amount}&phone=${cleanPhone}&v=${Date.now()}`;
+
+        console.log('[PAYMENT FALLBACK] Internal Simulator URL:', simulationUrl);
 
         res.json({
             payment_url: simulationUrl,
             transaction_id: transactionId,
             mode: 'SIMULATION',
-            warning: 'API CinetPay indisponible, passage en mode simulation interne.'
+            warning: 'API CinetPay indisponible (test local), redirection vers le simulateur interne.'
         });
 
     } catch (error: any) {
         console.error('[GLOBAL PAYMENT ERROR]', error);
         res.status(500).json({
             error: 'Erreur critique lors du traitement du paiement',
-            details: error.message
+            message: error.message
         });
     }
 };

@@ -25,16 +25,23 @@ export default function SearchScreen({ navigation }: any) {
         if (!departure && !arrival) return;
         setSearching(true);
         try {
+            console.log('[SEARCH] URL:', `${API_URL}/bookings/search`);
             const { data } = await axios.get(`${API_URL}/bookings/search`, {
                 params: {
                     departureCity: formatCity(departure),
                     arrivalCity: formatCity(arrival)
-                }
+                },
+                timeout: 10000
             });
             setResults(data);
-        } catch (error) {
-            console.error(error);
-            alert('Erreur de recherche');
+            if (data.length === 0) {
+                alert('Aucun trajet trouvé pour ces villes. Vérifiez l\'orthographe ou essayez d\'autres villes.');
+            }
+        } catch (error: any) {
+            const msg = error?.response?.data?.error || error?.message || 'Erreur inconnue';
+            const status = error?.response?.status || '';
+            console.error('[SEARCH ERROR]', msg, status);
+            alert(`Erreur de recherche${status ? ' (' + status + ')' : ''}: ${msg}`);
         } finally {
             setSearching(false);
         }
