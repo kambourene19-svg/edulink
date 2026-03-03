@@ -387,7 +387,7 @@ export default function Dashboard() {
                                         if (!selectedSchedule || !simPhone) return alert('Sélectionnez un trajet et un numéro.');
                                         setSimLoading(true);
                                         try {
-                                            const { data } = await api.post('/bookings', {
+                                            const { data } = await api.post('/bookings/book', {
                                                 scheduleId: selectedSchedule.id,
                                                 seatNumber: Math.floor(Math.random() * 30) + 1,
                                                 paymentMethod: 'CINETPAY',
