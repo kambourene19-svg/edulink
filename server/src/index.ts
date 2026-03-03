@@ -6,12 +6,34 @@ import { PrismaClient } from '@prisma/client';
 
 dotenv.config();
 
+import rateLimit from 'express-rate-limit';
+
 const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
 
+// --- SÉCURITÉ : RATE LIMITING ---
+// Limiteur global (100 requêtes par 15 min par IP)
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: { error: 'Trop de requêtes, réessayez dans 15 minutes.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Limiteur strict pour l'Auth (5 tentatives par 15 min)
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { error: 'Trop de tentatives de connexion, compte bloqué temporairement.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 // Middleware
 app.use(helmet());
+app.use(globalLimiter); // Appliquer partout par défaut
 
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
     console.error('FATAL ERROR: JWT_SECRET is not defined.');
@@ -59,7 +81,7 @@ import companyRoutes from './routes/companyRoutes';
 import statsRoutes from './routes/statsRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes); // Plus strict pour l'auth
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/stats', statsRoutes);

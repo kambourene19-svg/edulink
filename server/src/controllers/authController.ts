@@ -39,6 +39,9 @@ export const register = async (req: Request, res: Response) => {
         // 2. Création (COUTEUX - seulement si nouveau)
         const hashedPassword = await argon2.hash(password);
 
+        // Interdire la création de SUPER_ADMIN via l'API publique
+        const finalRole = (role === 'SUPER_ADMIN') ? 'USER' : (role || 'USER');
+
         const user = await prisma.user.create({
             data: {
                 phone,
@@ -47,7 +50,7 @@ export const register = async (req: Request, res: Response) => {
                 nationality,
                 idCardNumber,
                 socialMedia,
-                role: role || 'USER',
+                role: finalRole,
             },
         });
 
