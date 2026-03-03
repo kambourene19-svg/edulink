@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FasoPay - Passerelle de Paiement</title>
+    <style>
+        :root {
+            --primary: #f97316;
+            --secondary: #2563eb;
+            --background: #f8fafc;
+            --text: #0f172a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .security-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #f0fdf4;
+            color: #166534;
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: -1px;
+            margin-bottom: 0.25rem;
+        }
+
+        .subtitle {
+            color: #64748b;
+            font-size: 0.875rem;
+            margin-bottom: 2rem;
+        }
+
+        .amount-card {
+            background: #f1f5f9;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .amount-label {
+            display: block;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+        }
+
+        .amount {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .details-list {
+            text-align: left;
+            margin-bottom: 2rem;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 1rem;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .detail-label {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .detail-value {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            border: none;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-pay {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.4);
+            margin-bottom: 0.75rem;
+        }
+
+        .btn-pay:active {
+            transform: scale(0.98);
+            background-color: #ea580c;
+        }
+
+        .btn-cancel {
+            background-color: transparent;
+            color: #94a3b8;
+        }
+
+        /* USSD Simulation */
+        .ussd-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.5);
+            width: 280px;
+            z-index: 1000;
+            text-align: left;
+        }
+
+        .ussd-content {
+            font-family: monospace;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            white-space: pre-line;
+        }
+
+        /* Animation de chargement (Skeleton) */
+        .skeleton {
+            background: #e2e8f0;
+            background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
+            border-radius: 5px;
+            background-size: 200% 100%;
+            animation: 1.5s shine linear infinite;
+        }
+
+        @keyframes shine {
+            to {
+                background-position-x: -200%;
+            }
+        }
+
+        .skeleton-text {
+            height: 20px;
+            width: 100%;
+        }
+
+        .skeleton-amount {
+            height: 40px;
+            width: 140px;
+            margin: 0 auto;
+        }
+
+        #main-content {
+            display: block;
+            opacity: 1;
+        }
+
+        #skeleton-screen {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            right: 2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Message de secours si JS bug -->
+        <div id="debug-info" style="font-size: 0.6rem; color: #ccc; margin-bottom: 5px;">v2.1-stable</div>
+
+        <div id="main-content">
+            <div class="security-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                Paiement Sécurisé
+            </div>
+
+            <div class="logo">FasoPay</div>
+            <div class="subtitle">Validation de votre ticket</div>
+
+            <div class="amount-card">
+                <span class="amount-label">Somme à payer</span>
+                <div class="amount" id="display-amount">... FCFA</div>
+            </div>
+
+            <div class="details-list">
+                <div class="detail-row">
+                    <span class="detail-label">Référence</span>
+                    <span class="detail-value" id="display-ref">Chargement...</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Téléphone</span>
+                    <span class="detail-value" id="display-phone">...</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Réseau</span>
+                    <span class="detail-value">Orange Money</span>
+                </div>
+            </div>
+
+            <button class="btn btn-pay" id="pay-btn" onclick="initiatePayment()">Confirmer le paiement</button>
+            <button class="btn btn-cancel" onclick="cancelPayment()">Annuler</button>
+
+            <p style="font-size: 0.7rem; color: #94a3b8; margin-top: 1.5rem;">
+                Entrez votre code secret sur votre téléphone après avoir cliqué sur confirmer.
+            </p>
+        </div>
+    </div>
+
+    <!-- USSD Simulation Popup -->
+    <div id="ussd-modal" class="ussd-modal">
+        <div class="ussd-content" id="ussd-text"></div>
+        <div style="display: flex; justify-content: flex-end;">
+            <button onclick="confirmUSSD()"
+                style="background: none; border: none; color: #007aff; font-weight: bold; cursor: pointer; padding: 10px;">Répondre
+                [1]</button>
+        </div>
+    </div>
+
+    <!-- Bouton de secours (Masqué par défaut, apparaît après 3s de blocage) -->
+    <div id="panic-button" style="display:none; text-align:center; margin-top:20px;">
+        <button onclick="transitionToContent()"
+            style="background:#64748b; color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:600;">
+            Problème de chargement ? Cliquez ici
+        </button>
+    </div>
+
+    <!-- SCRIPTS ULTRAS-COMPATIBLES -->
+    <script>
+        var bookingId, amount, phone;
+
+        function updateData() {
+            try {
+                var search = window.location.search.substring(1);
+                var params = {};
+                var pairs = search.split('&');
+                for (var i = 0; i < pairs.length; i++) {
+                    var pair = pairs[i].split('=');
+                    params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || "");
+                }
+
+                bookingId = params.bookingId;
+                amount = params.amount || "0";
+                phone = params.phone || "...";
+
+                document.getElementById('display-amount').textContent = amount + " FCFA";
+                document.getElementById('display-ref').textContent = bookingId ? bookingId.substring(0, 8) : 'REF-INV';
+                document.getElementById('display-phone').textContent = phone;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function initiatePayment() {
+            var btn = document.getElementById('pay-btn');
+            btn.disabled = true;
+            btn.textContent = "Demande USSD envoyée...";
+
+            setTimeout(function () {
+                var ussdText = "Orange Money\n----------\nPaiement de " + amount + " FCFA à FASOTICKET.\nEntrez 1 pour confirmer.";
+                document.getElementById('ussd-text').innerText = ussdText;
+                document.getElementById('ussd-modal').style.display = 'block';
+
+                // --- AUTOMATISATION ---
+                setTimeout(function () {
+                    confirmUSSD();
+                }, 1500);
+            }, 500);
+        }
+
+        async function confirmUSSD() {
+            document.getElementById('ussd-modal').style.display = 'none';
+            var btn = document.getElementById('pay-btn');
+            btn.textContent = "Vérification...";
+
+            try {
+                var response = await fetch('/api/bookings/payment-webhook', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        bookingId: bookingId,
+                        status: 'SUCCESS',
+                        secret: 'fasoticket_secure_webhook_2026_xYz'
+                    })
+                });
+
+                if (response.ok) {
+                    btn.style.backgroundColor = "#10b981";
+                    btn.textContent = "✅ SUCCÈS";
+                    setTimeout(function () {
+                        window.location.href = "fasoticket://payment-success?bookingId=" + bookingId;
+                    }, 1000);
+                } else {
+                    alert("Erreur validation. Réessayez.");
+                    btn.disabled = false;
+                    btn.textContent = "Réessayer";
+                }
+            } catch (error) {
+                alert("Erreur réseau.");
+                btn.disabled = false;
+                btn.textContent = "Réessayer";
+            }
+        }
+
+        function cancelPayment() {
+            window.location.href = "fasoticket://payment-cancelled";
+        }
+
+        // Exécution directe
+        updateData();
+    </script>
+</body>
+
+</html>
