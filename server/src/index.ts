@@ -59,14 +59,10 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Important : avec credentials: true, origin ne peut pas être "*"
-        // Si allowedOrigins contient "*" ou l'origine réelle, on renvoie true (echo de l'origine)
-        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-            callback(null, true);
-        } else {
-            console.warn(`CORS blocked for origin: ${origin}`);
-            callback(new Error('Not allowed by CORS'));
-        }
+        // Mobile apps (React Native/Expo) may not send an origin header.
+        // For dev/demo, we allow all origins dynamically. This is compatible with credentials: true.
+        // (Cannot use '*' with credentials, must echo the origin back)
+        callback(null, origin || true);
     },
     credentials: true
 }));
