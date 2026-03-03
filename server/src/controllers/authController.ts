@@ -3,6 +3,7 @@ import prisma from '../utils/prisma';
 import argon2 from 'argon2';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
+import { MailService } from '../services/mailService';
 // import { Role } from '@prisma/client';
 
 const registerSchema = z.object({
@@ -176,61 +177,109 @@ export const updateProfile = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Erreur lors de la mise à jour du profil' });
     }
 };
-// --- MOT DE PASSE OUBLIÉ ---
+// --- MOT DE PASSE OUBLIÉ (Style Google avec OTP) ---
 
+/**
+ * 1. Demander la réinitialisation (Envoi du code par Email)
+ */
 export const requestPasswordReset = async (req: Request, res: Response) => {
     try {
-        const { phone } = req.body;
-        const user = await prisma.user.findUnique({ where: { phone } });
+        const { email } = req.body;
+
+        if (!email) return res.status(400).json({ error: "L'adresse email est requise." });
+
+        const user = await prisma.user.findUnique({ where: { email } });
 
         if (!user) {
-            // Pour sécurité, on ne dit pas si l'utilisateur existe ou non
-            return res.json({ message: 'Si ce numéro existe, un lien de réinitialisation a été envoyé.' });
+            // Sécurité : ne pas confirmer l'existence de l'email
+            return res.json({ message: 'Si cet email existe, un code de vérification a été envoyé.' });
         }
 
-        // Token temporaire (15 min)
-        const resetToken = jwt.sign(
-            { userId: user.id, type: 'password_reset' },
-            process.env.JWT_SECRET || 'secret_super_securise',
-            { expiresIn: '15m' }
-        );
+        // Générer un code à 6 chiffres
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-        // Simulation envoi Email / SMS
-        console.log(`\n🔑 [PASSWORD RESET] Link for user ${user.phone}:`);
-        console.log(`http://localhost:5173/reset-password?token=${resetToken}\n`);
+        // Stocker en base
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                resetCode: otpCode,
+                resetCodeExpires: expires
+            }
+        });
 
-        res.json({ message: 'Lien de réinitialisation généré (voir console serveur).' });
+        // Envoyer l'email
+        const previewUrl = await MailService.sendResetCode(email, otpCode);
+
+        res.json({
+            message: 'Code de vérification envoyé.',
+            previewUrl // Pour le test local uniquement
+        });
 
     } catch (error) {
+        console.error('[AUTH ERROR] Reset request failed:', error);
         res.status(500).json({ error: 'Erreur lors de la demande de réinitialisation' });
     }
 };
 
-export const resetPassword = async (req: Request, res: Response) => {
+/**
+ * 2. Vérifier si le code OTP est bon
+ */
+export const verifyResetCode = async (req: Request, res: Response) => {
     try {
-        const { token, newPassword } = req.body;
+        const { email, code } = req.body;
 
-        if (!token || !newPassword) {
-            return res.status(400).json({ error: 'Token et nouveau mot de passe requis' });
+        if (!email || !code) return res.status(400).json({ error: "Email et code requis." });
+
+        const user = await prisma.user.findUnique({ where: { email } });
+
+        if (!user || user.resetCode !== code) {
+            return res.status(400).json({ error: "Code invalide." });
         }
 
-        const secret = process.env.JWT_SECRET || 'secret_super_securise';
-        const decoded: any = jwt.verify(token, secret);
+        if (user.resetCodeExpires && user.resetCodeExpires < new Date()) {
+            return res.status(400).json({ error: "Code expiré (15 min écoulées)." });
+        }
 
-        if (decoded.type !== 'password_reset') {
-            return res.status(400).json({ error: 'Token invalide' });
+        res.json({ message: "Code valide. Vous pouvez changer votre mot de passe." });
+
+    } catch (error) {
+        res.status(500).json({ error: "Erreur lors de la vérification du code" });
+    }
+};
+
+/**
+ * 3. Enregistrer le nouveau mot de passe
+ */
+export const resetPassword = async (req: Request, res: Response) => {
+    try {
+        const { email, code, newPassword } = req.body;
+
+        if (!email || !code || !newPassword) {
+            return res.status(400).json({ error: 'Données manquantes pour la réinitialisation' });
+        }
+
+        const user = await prisma.user.findUnique({ where: { email } });
+
+        // Vérification finale du code
+        if (!user || user.resetCode !== code || (user.resetCodeExpires && user.resetCodeExpires < new Date())) {
+            return res.status(400).json({ error: 'Action non autorisée ou code expiré' });
         }
 
         const hashedPassword = await argon2.hash(newPassword);
 
         await prisma.user.update({
-            where: { id: decoded.userId },
-            data: { password: hashedPassword }
+            where: { id: user.id },
+            data: {
+                password: hashedPassword,
+                resetCode: null, // On nettoie le code après usage
+                resetCodeExpires: null
+            }
         });
 
-        res.json({ message: 'Mot de passe réinitialisé avec succès. Vous pouvez vous connecter.' });
+        res.json({ message: 'Mot de passe réinitialisé avec succès ! Connectez-vous.' });
 
     } catch (error) {
-        res.status(400).json({ error: 'Lien invalide ou expiré' });
+        res.status(400).json({ error: 'Erreur lors de la mise à jour du mot de passe' });
     }
 };

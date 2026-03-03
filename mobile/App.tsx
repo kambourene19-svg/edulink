@@ -9,6 +9,9 @@ import MyBookingsScreen from './screens/MyBookingsScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import ScannerScreen from './screens/ScannerScreen';
 import LoginScreen from './screens/LoginScreen';
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
+import VerifyCodeScreen from './screens/VerifyCodeScreen';
+import ResetPasswordScreen from './screens/ResetPasswordScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -28,6 +31,21 @@ export default function App() {
           name="Login"
           component={LoginScreen}
           options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ForgotPassword"
+          component={ForgotPasswordScreen}
+          options={{ title: 'Récupération', headerShown: false }}
+        />
+        <Stack.Screen
+          name="VerifyCode"
+          component={VerifyCodeScreen}
+          options={{ title: 'Vérification', headerShown: false }}
+        />
+        <Stack.Screen
+          name="ResetPassword"
+          component={ResetPasswordScreen}
+          options={{ title: 'Nouveau Passe', headerShown: false }}
         />
         <Stack.Screen
           name="Search"

@@ -38,6 +38,11 @@ model User {
   role      String    @default("USER") // Role
   bookings  Booking[]
   companyId String?
+  
+  // Champs pour la réinitialisation de mot de passe
+  resetCode        String?
+  resetCodeExpires DateTime?
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
