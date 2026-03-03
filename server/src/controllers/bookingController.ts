@@ -131,7 +131,10 @@ export const bookSeat = async (req: Request, res: Response) => {
             }
         });
 
-        const paymentUrl = `${process.env.PEER_URL}/pay.html?bookingId=${booking.id}&amount=${amount}&phone=${phoneNumber}&v=${Date.now()}`;
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+        const host = req.get('host');
+        const baseUrl = process.env.PEER_URL || `${protocol}://${host}`;
+        const paymentUrl = `${baseUrl}/pay.html?bookingId=${booking.id}&amount=${amount}&phone=${phoneNumber}&v=${Date.now()}`;
 
         res.status(201).json({
             message: 'Réservation initiée, redirection vers le paiement',
