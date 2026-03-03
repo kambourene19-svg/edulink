@@ -16,17 +16,31 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
     if (!token) return res.sendStatus(401);
 
-    jwt.verify(token, process.env.JWT_SECRET || 'secretkeywords', (err: any, user: any) => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        console.error('[CRITICAL] JWT_SECRET is not defined in environment variables');
+        return res.sendStatus(500);
+    }
+
+    jwt.verify(token, secret, (err: any, user: any) => {
         if (err) return res.sendStatus(403);
         req.user = user;
         next();
     });
 };
 
-export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
-    if (req.user && req.user.role === 'ADMIN') {
+export const isSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
+    if (req.user && req.user.role === 'SUPER_ADMIN') {
         next();
     } else {
-        res.status(403).json({ error: 'Access denied: Admins only' });
+        res.status(403).json({ error: 'Accès interdit : Super Admin uniquement' });
+    }
+};
+
+export const isCompanyAdmin = (req: Request, res: Response, next: NextFunction) => {
+    if (req.user && (req.user.role === 'ADMIN_COMPANY' || req.user.role === 'SUPER_ADMIN')) {
+        next();
+    } else {
+        res.status(403).json({ error: 'Accès interdit : Gérants uniquement' });
     }
 };
