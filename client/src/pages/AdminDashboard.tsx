@@ -75,7 +75,7 @@ export default function AdminDashboard() {
             <div className="flex justify-between items-center mb-8">
                 <div>
                     <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-                    <p className="text-gray-600">Bienvenue, {user?.email} (Admin)</p>
+                    <p className="text-gray-600">Bienvenue, {user?.phone} (Admin)</p>
                 </div>
                 <button onClick={handleLogout} className="bg-red-500 text-white px-4 py-2 rounded">
                     Déconnexion

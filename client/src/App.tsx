@@ -1,14 +1,26 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminRoute from './components/AdminRoute';
+import CompanyList from './pages/CompanyList';
+import BusList from './pages/BusList';
+import RouteList from './pages/RouteList';
+import ScheduleList from './pages/ScheduleList';
 
+import BoardingList from './pages/BoardingList';
+
+// ... (existing imports)
+
+import Terms from './pages/Terms';
+
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+
+// Protection des routes
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, loading } = useAuth();
+    if (loading) return <div>Chargement...</div>;
     if (!isAuthenticated) return <Navigate to="/login" />;
     return children;
 };
@@ -18,34 +30,23 @@ function App() {
         <Router>
             <AuthProvider>
                 <Routes>
-                    <Route path="/" element={<Layout />}>
-                        <Route index element={
-                            <div className="p-10 text-center">
-                                <h1 className="text-4xl font-bold text-primary mb-4">Bienvenue sur EduLink</h1>
-                                <p className="text-xl text-gray-600">La plateforme de réussite pour votre lycée.</p>
-                                <div className="mt-8">
-                                    <Link to="/login" className="bg-primary text-white px-6 py-3 rounded-lg text-lg hover:bg-blue-600">Accéder à mes cours</Link>
-                                </div>
-                            </div>
-                        } />
-                        <Route path="login" element={<Login />} />
-                        <Route path="register" element={<Register />} />
-                        <Route
-                            path="dashboard"
-                            element={
-                                <ProtectedRoute>
-                                    <Dashboard />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="admin"
-                            element={
-                                <AdminRoute>
-                                    <AdminDashboard />
-                                </AdminRoute>
-                            }
-                        />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/terms" element={<Terms />} />
+
+                    <Route path="/" element={
+                        <ProtectedRoute>
+                            <Layout />
+                        </ProtectedRoute>
+                    }>
+                        <Route index element={<Navigate to="/dashboard" replace />} />
+                        <Route path="dashboard" element={<Dashboard />} />
+                        <Route path="companies" element={<CompanyList />} />
+                        <Route path="buses" element={<BusList />} />
+                        <Route path="routes" element={<RouteList />} />
+                        <Route path="schedules" element={<ScheduleList />} />
+                        <Route path="schedules/:id/boarding" element={<BoardingList />} />
                     </Route>
                 </Routes>
             </AuthProvider>
