@@ -8,25 +8,114 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// enum Role {
+//   USER
+//   ADMIN_COMPANY
+//   SUPER_ADMIN
+// }
+
+// enum BookingStatus {
+//   PENDING
+//   CONFIRMED
+//   CANCELLED
+// }
+
+// enum PaymentStatus {
+//   PENDING
+//   SUCCESS
+//   FAILED
+// }
+
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
+  id        String    @id @default(uuid())
+  phone     String    @unique
   password  String
-  role      String   @default("STUDENT") // "STUDENT" | "ADMIN"
-  className String?  // Optional: classe de l'élève
+  email     String?   @unique
+  fullName  String?
+  nationality String?   // KYC: Nationalité
+  idCardNumber String?  // KYC: Numéro CNI/Passeport
+  socialMedia String?   // Liens sociaux optionnels
+  role      String    @default("USER") // Role
+  bookings  Booking[]
+  companyId String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  logoUrl   String?
+  contacts  String?
+  routes    Route[]
+  buses     Bus[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model Document {
-  id          String   @id @default(uuid())
-  title       String
-  description String?
-  url         String
-  subject     String
-  className   String
-  year        Int
-  type        String // "COURSE" | "EXERCISE" | "HOMEWORK" | "CORRECTION"
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model Bus {
+  id        String     @id @default(uuid())
+  plate     String     @unique
+  seats     Int
+  model     String?
+  companyId String
+  company   Company    @relation(fields: [companyId], references: [id])
+  schedules Schedule[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Route {
+  id            String     @id @default(uuid())
+  departureCity String
+  arrivalCity   String
+  price         Float
+  companyId     String
+  company       Company    @relation(fields: [companyId], references: [id])
+  schedules     Schedule[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Schedule {
+  id            String    @id @default(uuid())
+  departureTime DateTime
+  arrivalTime   DateTime?
+  routeId       String
+  route         Route     @relation(fields: [routeId], references: [id])
+  busId         String
+  bus           Bus       @relation(fields: [busId], references: [id])
+  bookings      Booking[]
+  availableSeats Int?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Booking {
+  id          String        @id @default(uuid())
+  seatNumber  Int
+  status      String        @default("PENDING") // BookingStatus
+  checkedIn   Boolean       @default(false)
+  qrCode      String?
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  scheduleId  String
+  schedule    Schedule      @relation(fields: [scheduleId], references: [id])
+  payment     Payment?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([scheduleId, seatNumber], name: "seat_constraint")
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  amount        Float
+  method        String
+  transactionId String?
+  status        String        @default("PENDING") // PaymentStatus
+  bookingId     String        @unique
+  booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 }
