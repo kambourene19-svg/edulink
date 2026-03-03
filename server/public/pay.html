@@ -257,7 +257,9 @@
 
             function setupUI() {
                 document.getElementById('display-amount').innerText = (params.amount || 0) + ' FCFA';
-                document.getElementById('display-ref').innerText = (params.bookingId || '').substring(0, 8) || '...';
+                // Formatage pro de la référence
+                var rawRef = (params.bookingId || '').replace(/-/g, '').substring(0, 8).toUpperCase();
+                document.getElementById('display-ref').innerText = rawRef ? 'FT-' + rawRef : '...';
                 document.getElementById('display-phone').innerText = params.phone || "...";
             }
 
