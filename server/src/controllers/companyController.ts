@@ -47,6 +47,14 @@ export const createCompany = async (req: Request, res: Response) => {
 export const addBus = async (req: Request, res: Response) => {
     try {
         const data = createBusSchema.parse(req.body);
+        const { companyId, role } = req.user;
+
+        // Seul un Super Admin peut créer des bus pour n'importe quelle compagnie
+        // Un Admin Compagnie ne peut créer des bus que pour SA compagnie
+        if (role !== 'SUPER_ADMIN' && data.companyId !== companyId) {
+            return res.status(403).json({ error: 'Accès interdit : Vous ne pouvez pas ajouter de ressources à une autre compagnie.' });
+        }
+
         const bus = await prisma.bus.create({ data });
         res.status(201).json(bus);
     } catch (error: any) {
@@ -60,6 +68,12 @@ export const addBus = async (req: Request, res: Response) => {
 export const addRoute = async (req: Request, res: Response) => {
     try {
         const data = createRouteSchema.parse(req.body);
+        const { companyId, role } = req.user;
+
+        if (role !== 'SUPER_ADMIN' && data.companyId !== companyId) {
+            return res.status(403).json({ error: 'Accès interdit : Vous ne pouvez pas créer de trajets pour une autre compagnie.' });
+        }
+
         const route = await prisma.route.create({ data });
         res.status(201).json(route);
     } catch (error: any) {
@@ -111,7 +125,13 @@ export const addSchedule = async (req: Request, res: Response) => {
  */
 export const getSchedules = async (req: Request, res: Response) => {
     try {
+        const { companyId, role } = req.user;
+
+        // Cloisonnement : Si admin compagnie, ne voir que les siens
+        const filter = role === 'SUPER_ADMIN' ? {} : { route: { companyId } };
+
         const schedules = await prisma.schedule.findMany({
+            where: filter,
             include: {
                 route: { include: { company: true } },
                 bus: true,
@@ -143,9 +163,19 @@ export const getCompanies = async (req: Request, res: Response) => {
  */
 export const getBuses = async (req: Request, res: Response) => {
     try {
+        const { role, companyId: userCompanyId } = req.user;
         const { companyId } = req.query;
+
+        // Déterminer le filtre
+        let finalCompanyId = companyId ? String(companyId) : undefined;
+
+        // Sécurité : Un admin de compagnie est forcé sur ses propres bus
+        if (role !== 'SUPER_ADMIN') {
+            finalCompanyId = userCompanyId;
+        }
+
         const buses = await prisma.bus.findMany({
-            where: companyId ? { companyId: String(companyId) } : {},
+            where: finalCompanyId ? { companyId: finalCompanyId } : {},
             include: { company: true }
         });
         res.json(buses);
@@ -177,9 +207,17 @@ export const deleteBus = async (req: Request, res: Response) => {
  */
 export const getRoutes = async (req: Request, res: Response) => {
     try {
+        const { role, companyId: userCompanyId } = req.user;
         const { companyId } = req.query;
+
+        let finalCompanyId = companyId ? String(companyId) : undefined;
+
+        if (role !== 'SUPER_ADMIN') {
+            finalCompanyId = userCompanyId;
+        }
+
         const routes = await prisma.route.findMany({
-            where: companyId ? { companyId: String(companyId) } : {},
+            where: finalCompanyId ? { companyId: finalCompanyId } : {},
             include: { company: true }
         });
         res.json(routes);
