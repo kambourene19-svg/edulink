@@ -11,7 +11,7 @@ const searchSchema = z.object({
 const bookSeatSchema = z.object({
     scheduleId: z.string().uuid(),
     seatNumber: z.number().int().positive(),
-    userId: z.string().uuid(),
+    userId: z.string().uuid().optional(), // Facultatif car extrait du token JWT
     paymentMethod: z.enum(['ORANGE_MONEY', 'MOOV_MONEY', 'CASH', 'CINETPAY']),
     phoneNumber: z.string().min(8), // Pour le paiement
 });
