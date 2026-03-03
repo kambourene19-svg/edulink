@@ -63,7 +63,12 @@ export default function MyBookingsScreen({ navigation }: any) {
             <TouchableOpacity
                 activeOpacity={0.9}
                 style={styles.card}
-                onPress={() => item.status !== 'CANCELLED' && navigation.navigate('Ticket', { schedule: item.schedule, seatNumber: item.seatNumber, qrCode: item.qrCode })}
+                onPress={() => item.status !== 'CANCELLED' && navigation.navigate('Ticket', {
+                    schedule: item.schedule,
+                    seatNumber: item.seatNumber,
+                    qrCode: item.qrCode,
+                    createdAt: item.createdAt
+                })}
             >
                 <View style={styles.cardHeader}>
                     <View style={styles.companyBox}>

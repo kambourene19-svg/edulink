@@ -69,9 +69,9 @@ export default function TicketScreen({ route, navigation }: any) {
 
                         <View style={styles.detailsGrid}>
                             <View style={styles.detailItem}>
-                                <Text style={styles.detailLabel}>DATE</Text>
+                                <Text style={styles.detailLabel}>TRAJET DU</Text>
                                 <Text style={styles.detailValue}>
-                                    {new Date(schedule.departureTime).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                    {new Date(schedule.departureTime).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
                                 </Text>
                             </View>
                             <View style={styles.detailItem}>
@@ -81,9 +81,16 @@ export default function TicketScreen({ route, navigation }: any) {
                                 </View>
                             </View>
                             <View style={styles.detailItem}>
-                                <Text style={styles.detailLabel}>BUS</Text>
-                                <Text style={styles.detailValue}>{schedule.bus.plate}</Text>
+                                <Text style={styles.detailLabel}>ACHAT LE</Text>
+                                <Text style={styles.detailValue}>
+                                    {route.params.createdAt ? new Date(route.params.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : '--/--'}
+                                </Text>
                             </View>
+                        </View>
+                        <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 12, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 10, color: '#94A3B8', fontWeight: 'bold' }}>
+                                PAYÉ LE {route.params.createdAt ? new Date(route.params.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                            </Text>
                         </View>
                     </View>
 

@@ -35,9 +35,15 @@ export const generateTicketPDF = async (booking: any) => {
                 </div>
             </div>
             
-            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
-                <p style="font-size: 9px; color: #94a3b8; margin: 0; text-transform: uppercase; font-weight: bold;">Réf. Réservation</p>
-                <p style="font-family: monospace; font-size: 16px; font-weight: bold; margin: 2px 0; color: #1e293b;">${booking.id.split('-')[0].toUpperCase()}</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+                    <p style="font-size: 8px; color: #94a3b8; margin: 0; text-transform: uppercase; font-weight: bold;">Réf. Réservation</p>
+                    <p style="font-family: monospace; font-size: 14px; font-weight: bold; margin: 2px 0; color: #1e293b;">${booking.id.split('-')[0].toUpperCase()}</p>
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+                    <p style="font-size: 8px; color: #94a3b8; margin: 0; text-transform: uppercase; font-weight: bold;">Acheté le</p>
+                    <p style="font-size: 13px; font-weight: bold; margin: 2px 0; color: #334155;">${new Date(booking.createdAt).toLocaleDateString('fr-FR')} à ${new Date(booking.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+                </div>
             </div>
 
             <div style="margin-bottom: 25px;">

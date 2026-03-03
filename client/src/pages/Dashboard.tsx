@@ -252,6 +252,7 @@ export default function Dashboard() {
                                 <th className="px-1 py-5">Trajet</th>
                                 <th className="px-1 py-5">Départ</th>
                                 <th className="px-1 py-5">Statut</th>
+                                <th className="px-1 py-5 text-right">Achat</th>
                                 <th className="px-8 py-5 text-right">Action</th>
                             </tr>
                         </thead>
@@ -298,6 +299,14 @@ export default function Dashboard() {
                                                 }`}>
                                                 {b.status}
                                             </span>
+                                        </td>
+                                        <td className="px-1 py-5 text-right">
+                                            <div className="text-[10px] font-bold text-slate-600">
+                                                {new Date(b.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+                                            </div>
+                                            <div className="text-[9px] text-slate-400 font-medium">
+                                                {new Date(b.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
                                         </td>
                                         <td className="px-8 py-5 text-right">
                                             <button
