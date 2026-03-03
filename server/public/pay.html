@@ -81,16 +81,6 @@
             background: #f8fafc;
         }
 
-        .operator-btn.selected {
-            border-color: var(--primary-orange);
-            background: #fff7ed;
-        }
-
-        .operator-btn.moov.selected {
-            border-color: var(--primary-moov);
-            background: #eff6ff;
-        }
-
         .op-logo {
             width: 50px;
             height: 50px;
@@ -152,11 +142,6 @@
             color: white;
         }
 
-        .btn-moov {
-            background: var(--primary-moov);
-            color: white;
-        }
-
         .btn-outline {
             background: transparent;
             color: #94a3b8;
@@ -178,9 +163,13 @@
 </head>
 
 <body>
+    <div id="debug-log"
+        style="display:none; position:fixed; bottom:0; left:0; right:0; background:black; color:lime; font-family:monospace; font-size:10px; padding:5px; max-height:60px; overflow:auto; z-index:9999; border-top:1px solid #333;">
+    </div>
+
     <div class="container">
         <!-- ÉTAPE 1: CHOIX OPÉRATEUR -->
-        <div id="step-1" class="step active">
+        <div id="step-1" class="step active" style="display:block">
             <h2 style="margin:0">Méthode de Paiement</h2>
             <p style="color:#64748b">Choisissez votre opérateur</p>
             <div class="operator-grid">
@@ -188,7 +177,7 @@
                     <div class="op-logo orange-logo">OM</div>
                     <span style="font-weight:700">Orange</span>
                 </div>
-                <div class="operator-btn moov" onclick="selectOperator('MOOV')">
+                <div class="operator-btn" onclick="selectOperator('MOOV')">
                     <div class="op-logo moov-logo">MM</div>
                     <span style="font-weight:700">Moov</span>
                 </div>
@@ -221,101 +210,108 @@
             <div class="success-icon">✓</div>
             <h2 style="margin:0">Paiement Réussi !</h2>
             <p style="color:#64748b">Votre ticket a été généré avec succès.</p>
-            <div id="redirect-context"
-                style="margin:2rem 0; font-size:0.9rem; padding:1rem; background:#f8fafc; border-radius:1rem">
-                Si vous ne voyez pas votre ticket, cliquez sur le bouton ci-dessous.
-            </div>
-            <button class="btn btn-primary" id="final-btn" onclick="finish()">Terminer l'achat</button>
+            <button class="btn btn-primary" onclick="finish()">Terminer l'achat</button>
         </div>
     </div>
 
     <script>
-        let params = {};
-        let selectedOp = 'ORANGE';
+        function log(msg) {
+            console.log(msg);
+            var d = document.getElementById('debug-log');
+            d.style.display = 'block';
+            d.innerHTML += '> ' + msg + '<br>';
+            d.scrollTop = d.scrollHeight;
+        }
+
+        var params = {};
 
         function init() {
-            const search = window.location.search.substring(1);
-            search.split('&').forEach(p => {
-                const [k, v] = p.split('=');
-                params[decodeURIComponent(k)] = decodeURIComponent(v || "");
-            });
-            document.getElementById('display-amount').textContent = (params.amount || 0) + ' FCFA';
-            document.getElementById('display-ref').textContent = (params.bookingId || '').substring(0, 8);
-            document.getElementById('display-phone').textContent = params.phone || "...";
-        }
+            try {
+                log('Initialisation...');
+                var search = window.location.search.substring(1);
+                var pairs = search.split('&');
+                for (var i = 0; i < pairs.length; i++) {
+                    var pair = pairs[i].split('=');
+                    if (pair[0]) params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || "");
+                }
 
-        function selectOperator(op) {
-            selectedOp = op;
-            const step2 = document.getElementById('step-2');
-            const indicator = document.getElementById('op-indicator');
-            const confirmBtn = document.getElementById('confirm-btn');
-
-            if (op === 'ORANGE') {
-                document.getElementById('op-name').textContent = 'Orange Money';
-                indicator.style.background = '#fff7ed';
-                indicator.style.color = '#f97316';
-                indicator.textContent = 'ORANGE MONEY';
-                confirmBtn.style.background = '#f97316';
-            } else {
-                document.getElementById('op-name').textContent = 'Moov Money';
-                indicator.style.background = '#eff6ff';
-                indicator.style.color = '#1e3a8a';
-                indicator.textContent = 'MOOV MONEY';
-                confirmBtn.style.background = '#1e3a8a';
+                document.getElementById('display-amount').innerText = (params.amount || 0) + ' FCFA';
+                document.getElementById('display-ref').innerText = (params.bookingId || '').substring(0, 8) || '...';
+                document.getElementById('display-phone').innerText = params.phone || "...";
+                log('Prêt pour: ' + params.bookingId);
+            } catch (e) {
+                log('ERREUR INIT: ' + e.message);
             }
-
-            document.getElementById('step-1').classList.remove('active');
-            step2.classList.add('active');
         }
 
-        async function processPayment() {
-            const btn = document.getElementById('confirm-btn');
+        window.selectOperator = function (op) {
+            try {
+                log('Clic sur: ' + op);
+                var s1 = document.getElementById('step-1');
+                var s2 = document.getElementById('step-2');
+                var ind = document.getElementById('op-indicator');
+                var btn = document.getElementById('confirm-btn');
+                var name = document.getElementById('op-name');
+
+                if (op === 'ORANGE') {
+                    name.innerText = 'Orange Money';
+                    ind.style.background = '#fff7ed';
+                    ind.style.color = '#f97316';
+                    ind.innerText = 'ORANGE MONEY';
+                    btn.style.background = '#f97316';
+                } else {
+                    name.innerText = 'Moov Money';
+                    ind.style.background = '#eff6ff';
+                    ind.style.color = '#1e3a8a';
+                    ind.innerText = 'MOOV MONEY';
+                    btn.style.background = '#1e3a8a';
+                }
+
+                s1.style.display = 'none';
+                s2.style.display = 'block';
+                log('Passage à la validation');
+            } catch (e) {
+                log('ERREUR CLIC: ' + e.message);
+            }
+        };
+
+        window.processPayment = async function () {
+            var btn = document.getElementById('confirm-btn');
             btn.disabled = true;
-            btn.textContent = 'Validation en cours...';
+            btn.innerText = 'Validation...';
+            log('Validation en cours...');
 
             try {
-                const resp = await fetch('/api/bookings/payment-webhook', {
+                var r = await fetch('/api/bookings/payment-webhook', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         bookingId: params.bookingId,
                         status: 'SUCCESS',
-                        secret: 'fasoticket_secure_webhook_2026_xYz' // Ce secret est public dans le simulateur
+                        secret: 'fasoticket_secure_webhook_2026_xYz'
                     })
                 });
 
-                if (resp.ok) {
-                    document.getElementById('step-2').classList.remove('active');
-                    document.getElementById('step-3').classList.add('active');
+                if (r.ok) {
+                    log('SUCCÈS !');
+                    document.getElementById('step-2').style.display = 'none';
+                    document.getElementById('step-3').style.display = 'block';
                 } else {
-                    alert("Erreur serveur lors de la validation.");
+                    log('ERREUR API: ' + r.status);
+                    alert("Erreur de paiement.");
                     btn.disabled = false;
-                    btn.textContent = 'Réessayer';
+                    btn.innerText = 'Réessayer';
                 }
             } catch (e) {
-                alert("Erreur réseau. Vérifiez votre connexion.");
+                log('ERREUR RÉSEAU: ' + e.message);
+                alert("Erreur réseau.");
                 btn.disabled = false;
-                btn.textContent = 'Réessayer';
             }
-        }
+        };
 
-        function finish() {
-            // Détection du contexte (Web vs Mobile App)
-            const isWeb = !window.navigator.userAgent.includes('FasoTicketApp') && !document.referrer.includes('fasoticket://');
-
-            if (isWeb) {
-                // Sur le Web, on redirige vers le dashboard ou on ferme
-                try {
-                    window.opener.location.reload(); // Rafraîchir le dashboard parent
-                    window.close(); // Fermer le simulateur
-                } catch (e) {
-                    window.location.href = "https://fasoticket.vercel.app/dashboard";
-                }
-            } else {
-                // Sur Mobile App, on tente le Deep Link
-                window.location.href = "fasoticket://payment-success?bookingId=" + params.bookingId;
-            }
-        }
+        window.finish = function () {
+            window.location.href = "https://fasoticket.vercel.app/dashboard";
+        };
 
         init();
     </script>
