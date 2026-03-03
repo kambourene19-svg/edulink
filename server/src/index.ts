@@ -32,7 +32,14 @@ const authLimiter = rateLimit({
 });
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+            "script-src": ["'self'", "'unsafe-inline'"],
+        },
+    },
+}));
 app.use(globalLimiter); // Appliquer partout par défaut
 
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
