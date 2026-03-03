@@ -7,7 +7,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { generateTicketPDF } from '../utils/pdfGenerator';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const StatCard = ({ title, value, icon: Icon, color, trend }: any) => (
     <motion.div
@@ -38,6 +38,11 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [selectedBooking, setSelectedBooking] = useState<any>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [showSimModal, setShowSimModal] = useState(false);
+    const [availableSchedules, setAvailableSchedules] = useState<any[]>([]);
+    const [simLoading, setSimLoading] = useState(false);
+    const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
+    const [simPhone, setSimPhone] = useState(user?.phone || '');
 
     const fetchStats = async () => {
         setLoading(true);
@@ -180,25 +185,45 @@ export default function Dashboard() {
 
                 {/* Info / Quick Actions Card */}
                 <div className="lg:col-span-1 space-y-6">
-                    <div className="card-premium p-8 bg-primary dark:bg-slate-900 border-none relative overflow-hidden group">
-                        <div className="absolute -right-4 -top-4 w-32 h-32 bg-accent/20 rounded-full blur-3xl group-hover:bg-accent/30 transition-all duration-700"></div>
-                        <h3 className="text-xl font-bold text-white mb-2 relative z-10">Export Rapide</h3>
-                        <p className="text-slate-400 text-sm mb-6 relative z-10">Générez un rapport complet de vos activités en un clic.</p>
-                        <button className="btn-accent w-full flex items-center justify-center gap-3 relative z-10">
-                            <Download size={20} />
-                            <span>Rapport PDF</span>
-                        </button>
-                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2 relative z-10">Test de Simulation</h3>
+                    <p className="text-slate-400 text-sm mb-6 relative z-10">Simulez le processus d'achat client (Paiement + Ticket).</p>
+                    <button
+                        onClick={async () => {
+                            setSimLoading(true);
+                            try {
+                                const { data } = await api.get('/companies/schedules');
+                                setAvailableSchedules(data);
+                                setShowSimModal(true);
+                            } catch (e) {
+                                alert('Erreur chargement trajets');
+                            } finally {
+                                setSimLoading(false);
+                            }
+                        }}
+                        className="btn-accent w-full flex items-center justify-center gap-3 relative z-10"
+                    >
+                        <TrendingUp size={20} />
+                        <span>Simuler un Achat</span>
+                    </button>
+                </div>
 
-                    <div className="card-premium p-8">
-                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Besoin d'aide ?</h3>
-                        <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-                            Notre équipe support est disponible 24/7 pour vous accompagner dans la gestion de votre compagnie.
-                        </p>
-                        <button className="text-primary dark:text-accent font-bold text-sm flex items-center gap-2 hover:translate-x-1 transition-transform">
-                            Contacter le support <ChevronRight size={16} />
-                        </button>
-                    </div>
+                <div className="card-premium p-8 bg-primary/20 dark:bg-slate-900 border-none relative overflow-hidden group">
+                    <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2 relative z-10">Export Rapide</h3>
+                    <p className="text-slate-400 text-sm mb-6 relative z-10">Générez un rapport complet de vos activités en un clic.</p>
+                    <button className="btn-accent w-full flex items-center justify-center gap-3 relative z-10">
+                        <Download size={20} />
+                        <span>Rapport PDF</span>
+                    </button>
+                </div>
+
+                <div className="card-premium p-8">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Besoin d'aide ?</h3>
+                    <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+                        Notre équipe support est disponible 24/7 pour vous accompagner dans la gestion de votre compagnie.
+                    </p>
+                    <button className="text-primary dark:text-accent font-bold text-sm flex items-center gap-2 hover:translate-x-1 transition-transform">
+                        Contacter le support <ChevronRight size={16} />
+                    </button>
                 </div>
             </div>
 
@@ -249,7 +274,7 @@ export default function Dashboard() {
                                                 alt={b.schedule.route.company.name}
                                                 className="w-10 h-10 rounded-xl shadow-sm object-cover border border-white dark:border-slate-700 ring-1 ring-slate-100 dark:ring-slate-800"
                                             />
-                                        </td >
+                                        </td>
                                         <td className="px-4 py-5">
                                             <div className="font-bold text-slate-800 dark:text-slate-200">{b.user.fullName}</div>
                                             <div className="text-xs text-slate-500">{b.user.phone}</div>
@@ -282,17 +307,110 @@ export default function Dashboard() {
                                                 <Download size={18} />
                                             </button>
                                         </td>
-                                    </motion.tr >
+                                    </motion.tr>
                                 ))}
-                        </tbody >
-                    </table >
-                    {
-                        stats?.recentBookings.length === 0 && (
-                            <div className="p-12 text-center text-slate-400 italic">Aucune donnée disponible.</div>
-                        )
-                    }
-                </div >
-            </div >
-        </div >
+                        </tbody>
+                    </table>
+                    {stats?.recentBookings.length === 0 && (
+                        <div className="p-12 text-center text-slate-400 italic">Aucune donnée disponible.</div>
+                    )}
+                </div>
+            </div>
+
+            {/* Simulation Modal */}
+            <AnimatePresence>
+                {showSimModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowSimModal(false)}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-lg relative z-10 overflow-hidden"
+                        >
+                            <div className="p-8 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+                                <div>
+                                    <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Simulator FasoTicket</h2>
+                                    <p className="text-sm text-slate-500 font-medium">Testez le flux de vente réel.</p>
+                                </div>
+                                <button onClick={() => setShowSimModal(false)} className="text-slate-400 hover:text-slate-600">
+                                    <X size={28} />
+                                </button>
+                            </div>
+
+                            <div className="p-8 space-y-6">
+                                <div>
+                                    <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Choisir un Trajet</label>
+                                    <select
+                                        className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-transparent focus:border-accent rounded-2xl px-5 py-4 outline-none transition-all font-bold appearance-none cursor-pointer"
+                                        onChange={(e) => {
+                                            const s = availableSchedules.find(x => x.id === e.target.value);
+                                            setSelectedSchedule(s);
+                                        }}
+                                        defaultValue=""
+                                    >
+                                        <option value="" disabled>Séléctionnez un voyage...</option>
+                                        {availableSchedules.map(s => (
+                                            <option key={s.id} value={s.id}>
+                                                {s.route.departureCity} ➝ {s.route.arrivalCity} ({new Date(s.departureTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {selectedSchedule && (
+                                    <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/30">
+                                        <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase mb-1">Prix du billet</p>
+                                        <p className="text-2xl font-black text-amber-500">{selectedSchedule.route.price.toLocaleString()} FCFA</p>
+                                    </div>
+                                )}
+
+                                <div className="space-y-4">
+                                    <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Numéro de téléphone voyageur</label>
+                                    <input
+                                        type="tel"
+                                        value={simPhone}
+                                        onChange={(e) => setSimPhone(e.target.value)}
+                                        className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-transparent focus:border-accent rounded-2xl px-5 py-4 outline-none transition-all font-bold"
+                                        placeholder="Ex: 70000000"
+                                    />
+                                </div>
+
+                                <button
+                                    onClick={async () => {
+                                        if (!selectedSchedule || !simPhone) return alert('Sélectionnez un trajet et un numéro.');
+                                        setSimLoading(true);
+                                        try {
+                                            const { data } = await api.post('/bookings', {
+                                                scheduleId: selectedSchedule.id,
+                                                seatNumber: Math.floor(Math.random() * 30) + 1,
+                                                paymentMethod: 'CINETPAY',
+                                                phoneNumber: simPhone
+                                            });
+                                            window.open(data.paymentUrl, '_blank');
+                                            setShowSimModal(false);
+                                        } catch (error: any) {
+                                            alert('Erreur: ' + (error.response?.data?.error || 'Échec de réservation'));
+                                        } finally {
+                                            setSimLoading(false);
+                                        }
+                                    }}
+                                    disabled={simLoading || !selectedSchedule}
+                                    className="w-full py-4 px-6 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black shadow-xl hover:shadow-2xl transition-all disabled:opacity-50"
+                                >
+                                    {simLoading ? 'Initialisation...' : 'Démarrer la Simulation 🚀'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </div>
     );
 }

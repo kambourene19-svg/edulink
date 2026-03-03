@@ -3,7 +3,7 @@ import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
     LayoutDashboard, Building2, Ticket, LogOut, Bus,
-    Map, Moon, Sun, ChevronRight, User, Menu, X
+    Map, Moon, Sun, ChevronRight, User, Menu, X, Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -36,6 +36,7 @@ export default function Layout() {
         { path: '/companies', label: 'Compagnies', icon: Building2 },
         { path: '/buses', label: 'Flotte de Bus', icon: Bus, category: 'Gestion' },
         { path: '/routes', label: 'Trajets & Prix', icon: Map },
+        { path: '/schedules', label: 'Planification', icon: Calendar },
     ];
 
     const isActive = (path: string) => location.pathname === path;
